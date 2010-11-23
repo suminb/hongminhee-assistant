@@ -3,6 +3,8 @@ var humane = require( "./lib/humane" ),
 
 var xyrnize = module.exports = function xyrnize( bot ) {
 
+var funniness = 0;
+
 bot.addListener( "kick", function( channel, who, by, reason ) {
     if ( who === this.nick ) {
         this.join( channel, function() {
@@ -12,8 +14,26 @@ bot.addListener( "kick", function( channel, who, by, reason ) {
 });
 
 bot.addListener( "message", function( from, to, message ) {
+    var match;
+
     if ( /xy(m|rn)|씸|성(용|룡)/.exec( message ) ) {
         this.shoot.apply( this, arguments );
+    }
+
+    if ( match = /ㅋㅋㅋ+/.exec( message ) ) {
+        if ( match[ 0 ].length >= 5 ) {
+            funniness++;
+        }
+        if ( funniness > 2 ) {
+            util.probably( .75, function() {
+                this.giggle.call( this, from, to, message, match );
+            }, this );
+        }
+        util.probably( .10, function() {
+            funniness = 0;
+        }, this );
+    } else {
+        funniness = Math.max( --funniness, 0 );
     }
 });
 
@@ -25,12 +45,26 @@ bot.shoot = function( from, to, message ) {
         "고종발사", "우주발사", "옵좀발사", "나로호발사", "왼발~왼발싸",
         "이발사", "숟갈발사", "외주발사", "전방을 향하여 힘찬 함성 발사",
         "ㅇㅈ발사", "ㅇㅅㅇ", "인중발사", "인증발사", "소변발사",
-        "위성발사", "포탄발사", "재석 선배 맥북에어 발사"
+        "위성발사", "포탄발사", "재석 선배 맥북에어 발사", "역장발사"
     ]];
     this.talk( to, messages );
     util.probably( .10, function() {
-        this.talk( to, "아 여기 공개채널이었지" );
+        this.talk( to, [[
+            "아 맞다 여기 공개채널이지ㅠㅠ",
+            "는 훼이크",
+            "아 여기 공개채널이었지"
+        ]]);
     }, this );
+};
+
+bot.giggle = function( from, to, message, match ) {
+    var ml = match[ 0 ].length,
+        len = util.gaussianRand( ml, ml / 2 ),
+        message = "";
+    for ( var i = 0; i < len; i++ ) {
+        message += "ㅋ";
+    }
+    this.talk( to, message );
 };
 
 bot.suggestDinnerMenu = function( channel ) {
