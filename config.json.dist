@@ -1,0 +1,6 @@
+{
+    "server": "irc.ozinger.org",
+    "nick": "your-xyrn-bot",
+    "channels": [ "#example", "#test" ],
+    "debug": false
+}
