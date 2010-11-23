@@ -1,7 +1,7 @@
 var humane = require( "./lib/humane" ),
     util = require( "./lib/util" );
 
-module.exports = function xyrnize( bot ) {
+var xyrnize = module.exports = function xyrnize( bot ) {
 
 bot.addListener( "kick", function( channel, who, by, reason ) {
     if ( who === this.nick ) {
@@ -27,8 +27,7 @@ bot.shoot = function( from, to, message ) {
         "ㅇㅈ발사", "ㅇㅅㅇ", "인중발사", "인증발사", "소변발사",
         "위성발사", "포탄발사", "재석 선배 맥북에어 발사"
     ]];
-    this.talk( to, util.choice( messages[ 0 ] ) );
-    this.talk( to, util.choice( messages[ 1 ] ) );
+    this.talk( to, messages );
     util.probably( .10, function() {
         this.talk( to, "아 여기 공개채널이었지" );
     }, this );
@@ -42,8 +41,7 @@ bot.suggestDinnerMenu = function( channel ) {
         "피자 시키자", "피자나 시킬까", "피ㅣ자나 시킬까",
         "너 피자 아직도 있더라"
     ]];
-    this.talk( to, util.choice( messages[ 0 ] ) );
-    this.talk( to, util.choice( messages[ 1 ] ) );
+    this.talk( to, messages );
 };
 
 return bot;
