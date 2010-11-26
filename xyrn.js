@@ -11,9 +11,76 @@ var xyrnize = module.exports = function xyrnize( bot ) {
 
 IRC 봇을 xyrn 화 시킴
 */
-var stat = {
-    funniness: 0, // 화기애애한 정도
-    prosperity: 0 // 흥한 정도
+
+bot.initStatus = function( channel ) {
+    if ( !this.status ) {
+        this.status = {};
+    }
+    if ( !this.times ) {
+        this.times = {};
+    }
+
+    this.status[ channel ] = {
+        funniness: 0, // 화기애애한 정도
+        prosperity: 0 // 흥한 정도
+    };
+    this.times[ channel ] = {
+        silenced: new Date()
+    };
+
+    var fn = (function( channel ) {
+        var stat = this.status[ channel ],
+            time = this.times[ channel ];
+            decrease = function( n ) {
+                return Math.max( 0, n - 1 );
+            },
+            half = function( n ) {
+                return Math.floor( n / 2 );
+            };
+        return function() {
+            var now = new Date();
+
+            if ( stat.prosperity ) {
+                if ( now - time.funned > 5000 ) {
+                    // 5초 이상 안웃음
+                    stat.funniness = half( stat.funniness );
+                }
+                if ( now - time.updated > 10000 ) {
+                    // 10초 이상 정전
+                    stat.prosperity = half( stat.prosperity );
+                    if ( !stat.prosperity ) {
+                        time.silenced = now;
+                    }
+                }
+            } else if ( now - time.silenced > 10 * 60000 ) {
+                // 10분 이상 정전
+                bot.emit( "silence", channel );
+                util.probably( .25, function() {
+                    time.silenced = now;
+                });
+            }
+        };
+    }).call( this, channel );
+    setInterval( fn, 3000 );
+};
+
+bot.updateStatus = function( channel, message ) {
+    var stat = this.status[ channel ],
+        time = this.times[ channel ],
+        now = new Date(),
+        match;
+
+    if ( match = /ㅋㅋㅋㅋㅋ+/.exec( message ) ) {
+        if ( stat.funniness ) {
+            stat.funniness = (stat.funniness + match[ 0 ].length) / 2;
+        } else {
+            stat.funniness = match[ 0 ].length;
+        }
+        time.funned = now;
+    }
+
+    stat.prosperity++;
+    time.updated = now;
 };
 
 bot.addListener( "kick", function( channel, who, by, reason ) {
@@ -32,8 +99,15 @@ bot.addListener( "kick", function( channel, who, by, reason ) {
     }
 });
 
+bot.addListener( "join", function( channel, who ) {
+    if ( this.nick === who ) {
+        this.initStatus( channel );
+    }
+});
+
 bot.addListener( "message", function( from, to, message ) {
-    var match;
+    var stat = this.status[ to ],
+        match;
 
     if ( humane.talk.ing ) {
         // 아직 이전 대답을 하지 않았을 경우 멈춤
@@ -51,22 +125,26 @@ bot.addListener( "message", function( from, to, message ) {
         }
     }
 
-    if ( match = /ㅋㅋㅋ+/.exec( message ) ) {
-        if ( match[ 0 ].length >= 5 ) {
-            stat.funniness++;
-        }
-        if ( stat.funniness > 2 ) {
-            util.probably( .75, function() {
-                this.giggle.call( this, from, to, message, match );
+    if ( stat.funniness > 5 ) {
+        util.probably( stat.prosperity / 10, function() {
+            this.giggle.apply( this, arguments );
+
+            // 10% 확률로 화기애애수치 초기화
+            util.probably( .10, function() {
+                stat.funniness = 0;
             }, this );
-        }
-    } else {
-        stat.funniness = Math.max( --stat.funniness, 0 );
+        }, this, arguments );
     }
 
-    if ( /4camel/.exec( message ) ) {
-        this.shuttle.apply( this, arguments );
+    if ( /github/.exec( message ) ) {
+        this.github( to );
     }
+
+    this.updateStatus( to, message );
+});
+
+bot.addListener( "silence", function( channel ) {
+    util.probably( .50, this.shuttle, this, arguments );
 });
 
 bot.answer = function( from, to, message ) {
@@ -74,7 +152,7 @@ bot.answer = function( from, to, message ) {
 
     상대에 따라 반말 또는 존댓말로 대답
     */
-    var talkDown = /sublee|홍민희|kijun|치도리/,
+    var talkDown = /^(subl|홍민희|kijun|치도리)/,
         answers;
     if ( talkDown.exec( from ) ) {
         answers = [ "dd", "ㅇㅇ", "ㅇㅇ?", "?", "응", "응?" ];
@@ -116,27 +194,22 @@ bot.shoot = function( from, to, message ) {
     }, this );
 };
 
-bot.giggle = function( from, to, message, match ) {
+bot.giggle = function( from, to, message ) {
     /**:bot.giggle( from, to, message, match )
 
     남들이 웃는 만큼만 웃기
     */
-    var ml = match[ 0 ].length,
-        len = util.gaussianRand( ml, ml / 2 ),
+    var weight = this.status[ to ].funniness,
+        len = util.gaussianRand( weight, weight / 2 ),
         message = "";
     for ( var i = 0; i < len; i++ ) {
         message += "ㅋ";
     }
     this.talk( to, message );
-
-    // 10% 확률로 화기애애수치 초기화
-    util.probably( .10, function() {
-        stat.funniness = 0;
-    }, this );
 };
 
-bot.shuttle = function( from, to, message ) {
-    /**:bot.shuttle( from, to, message )
+bot.shuttle = function( channel ) {
+    /**:bot.shuttle( channel )
 
     4camel 개드립 셔틀
     */
@@ -161,13 +234,62 @@ bot.shuttle = function( from, to, message ) {
                     // 댓글 4개 미만은 망한 걸로 간주하고 셔틀하지 않음
                     return;
                 }
-                bot.talk( to, [[ url ], comments ] );
+                bot.talk( channel, [[ url ], comments ] );
                 bot.shuttle.history.push( url );
             });
         }
     });
 };
 bot.shuttle.history = [];
+
+bot.github = function( channel ) {
+    var projects = [ "lessipy" ],
+        project = util.choice( projects ),
+        nick = project + "-github",
+        githubBot = new this.constructor( this.opt.server, nick, {
+            port: this.opt.port,
+            password: this.opt.password,
+            userName: nick,
+            realName: nick,
+            channels: [ channel ],
+            autoRejoin: false
+        });
+
+    githubBot.addListener( "join", function( chan, who ) {
+        if ( chan !== channel || who !== nick ) {
+            return;
+        }
+        var commitHash = "0123456789abcdef",
+            bitlyHash = commitHash + "ghijklmnopqrsluvwxyz",
+            commit = "",
+            bitly = "",
+            log = util.choice([
+                "Added test files", "Changed parser, ast.",
+                "Deleted deprecated tests", "Added Accessor, Mixin, Ruleset",
+                "modified parser, added some ast", "Very many changes",
+                "modified parser", "changed classifiers, and etc",
+                "Changed license"
+            ]);
+
+        for ( var i = 0; i < 7; i++ ) {
+            commit += util.choice( commitHash );
+        }
+        for ( var bit, i = 0; i < 6; i++ ) {
+            bit = util.choice( bitlyHash );
+            if ( Math.random() < .50 ) {
+                bit = bit.toUpperCase();
+            }
+            bitly += bit;
+        }
+
+        var msg = project + ": master " + bot.nick + " * " + commit;
+        msg += " (" + util.rand(1, 10) + " files in " + util.rand( 1, 5 );
+        msg += " dirs): " + log + " - http://bit.ly/" + bitly;
+        this.say( channel, msg );
+        this.part( channel );
+        this.disconnect();
+    });
+};
 
 bot.suggestDinnerMenu = function( channel ) {
     /**:bot.suggestDinnerMenu( channel )
