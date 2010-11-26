@@ -53,7 +53,7 @@ bot.initStatus = function( channel ) {
 
             if ( stat.prosperity ) {
                 if ( now - time.funned > 10000 ) {
-                    // 5초 이상 안웃음
+                    // 10초 이상 안웃음
                     prev = stat.funniness;
                     stat.funniness = half( prev );
                     if ( prev !== stat.funniness ) {
@@ -130,7 +130,7 @@ bot.addListener( "message", function( from, to, message ) {
     var stat = this.status[ to ],
         match;
 
-    if ( humane.talk.ing ) {
+    if ( humane.talk.ing || /-github$/.exec( from ) ) {
         // 아직 이전 대답을 하지 않았을 경우 멈춤
         return;
     }
@@ -147,7 +147,7 @@ bot.addListener( "message", function( from, to, message ) {
     }
 
     if ( stat.funniness > 5 ) {
-        util.probably( stat.prosperity / 10, function() {
+        util.probably( stat.prosperity / 5, function() {
             this.giggle.apply( this, arguments );
 
             // 10% 확률로 화기애애수치 초기화
@@ -231,7 +231,7 @@ bot.giggle = function( from, to, message ) {
     this.talk( to, message );
 };
 
-bot.shuttle = function( channel ) {
+bot.shuttle = humane.coolTime(function( channel ) {
     /**:bot.shuttle( channel )
 
     4camel 개드립 셔틀
@@ -262,10 +262,10 @@ bot.shuttle = function( channel ) {
             });
         }
     });
-};
+}, function() { return util.rand( 20000, 3600000 ); });
 bot.shuttle.history = [];
 
-bot.github = function( channel ) {
+bot.github = humane.coolTime(function( channel ) {
     var projects = [ "lessipy" ],
         project = util.choice( projects ),
         nick = project + "-github",
@@ -312,7 +312,7 @@ bot.github = function( channel ) {
         this.part( channel );
         this.disconnect();
     });
-};
+}, function() { return util.rand( 3600000, 21600000 ); });
 
 bot.suggestDinnerMenu = function( channel ) {
     /**:bot.suggestDinnerMenu( channel )
