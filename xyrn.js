@@ -24,9 +24,7 @@ bot.initStatus = function( channel ) {
         funniness: 0, // 화기애애한 정도
         prosperity: 0 // 흥한 정도
     };
-    this.times[ channel ] = {
-        silenced: new Date()
-    };
+    this.times[ channel ] = {};
 
     var fn = (function( channel ) {
         var stat = this.status[ channel ],
@@ -45,18 +43,25 @@ bot.initStatus = function( channel ) {
                     // 5초 이상 안웃음
                     stat.funniness = half( stat.funniness );
                 }
-                if ( now - time.updated > 10000 ) {
-                    // 10초 이상 정전
+                if ( now - time.updated > 60000 ) {
+                    // 1분 이상 정전
+                    if ( bot.opt.debug ) {
+                        sys.log( "\033[0;33msilenced\033[0m" );
+                    }
                     stat.prosperity = half( stat.prosperity );
                     if ( !stat.prosperity ) {
                         time.silenced = now;
                     }
                 }
-            } else if ( now - time.silenced > 10 * 60000 ) {
-                // 10분 이상 정전
-                bot.emit( "silence", channel );
-                util.probably( .25, function() {
-                    time.silenced = now;
+            } else if ( time.silenced ) {
+                stat.stillness = (now - time.silenced) / 3600000;
+                if ( bot.opt.debug ) {
+                    var msg = "stillness: \033[0;33m";
+                    msg += util.round( stat.stillness, 2 ) + "\033[0m";
+                    sys.log( msg );
+                }
+                util.probably( stat.stillness, function() {
+                    bot.emit( "silence", channel );
                 });
             }
         };
@@ -76,10 +81,19 @@ bot.updateStatus = function( channel, message ) {
         } else {
             stat.funniness = match[ 0 ].length;
         }
+        if ( this.opt.debug ) {
+            var msg = "funniness: \033[0;33m";
+            msg += util.round( stat.funniness, 2 ) + "\033[0m";
+            sys.log( msg );
+        }
         time.funned = now;
     }
 
     stat.prosperity++;
+    if ( this.opt.debug ) {
+        sys.log( "prosperity: \033[0;33m" + stat.prosperity + "\033[0m" );
+    }
+
     time.updated = now;
 };
 
