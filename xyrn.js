@@ -12,6 +12,18 @@ var xyrnize = module.exports = function xyrnize( bot ) {
 IRC 봇을 xyrn 화 시킴
 */
 
+function reportStatus( key, val ) {
+    if ( bot.opt.debug ) {
+        if ( val === undefined ) {
+            sys.log( "\033[0;33m" + key + "\033[0m" );
+            return;
+        } else if ( val % 1 ) {
+            val = util.round( val, 2 );
+        }
+        sys.log( key + ": \033[0;33m" + val + "\033[0m" );
+    }
+}
+
 bot.initStatus = function( channel ) {
     if ( !this.status ) {
         this.status = {};
@@ -36,33 +48,35 @@ bot.initStatus = function( channel ) {
                 return Math.floor( n / 2 );
             };
         return function() {
-            var now = new Date();
+            var now = new Date(),
+                prev;
 
             if ( stat.prosperity ) {
-                if ( now - time.funned > 5000 ) {
+                if ( now - time.funned > 10000 ) {
                     // 5초 이상 안웃음
-                    stat.funniness = half( stat.funniness );
+                    prev = stat.funniness;
+                    stat.funniness = half( prev );
+                    if ( prev !== stat.funniness ) {
+                        reportStatus( "funniness", stat.funniness );
+                    }
                 }
                 if ( now - time.updated > 60000 ) {
                     // 1분 이상 정전
-                    if ( bot.opt.debug ) {
-                        sys.log( "\033[0;33msilenced\033[0m" );
-                    }
                     stat.prosperity = half( stat.prosperity );
                     if ( !stat.prosperity ) {
                         time.silenced = now;
                     }
+                    reportStatus( "silenced" );
                 }
             } else if ( time.silenced ) {
+                prev = util.round( stat.stillness, 2 );
                 stat.stillness = (now - time.silenced) / 3600000;
-                if ( bot.opt.debug ) {
-                    var msg = "stillness: \033[0;33m";
-                    msg += util.round( stat.stillness, 2 ) + "\033[0m";
-                    sys.log( msg );
-                }
                 util.probably( stat.stillness, function() {
                     bot.emit( "silence", channel );
                 });
+                if ( prev !== util.round( stat.stillness, 2 ) ) {
+                    reportStatus( "stillness", stat.stillness );
+                }
             }
         };
     }).call( this, channel );
@@ -81,20 +95,13 @@ bot.updateStatus = function( channel, message ) {
         } else {
             stat.funniness = match[ 0 ].length;
         }
-        if ( this.opt.debug ) {
-            var msg = "funniness: \033[0;33m";
-            msg += util.round( stat.funniness, 2 ) + "\033[0m";
-            sys.log( msg );
-        }
         time.funned = now;
+        reportStatus( "funniness", stat.funniness );
     }
 
     stat.prosperity++;
-    if ( this.opt.debug ) {
-        sys.log( "prosperity: \033[0;33m" + stat.prosperity + "\033[0m" );
-    }
-
     time.updated = now;
+    reportStatus( "prosperity", stat.prosperity );
 };
 
 bot.addListener( "kick", function( channel, who, by, reason ) {
@@ -150,15 +157,17 @@ bot.addListener( "message", function( from, to, message ) {
         }, this, arguments );
     }
 
-    if ( /github/.exec( message ) ) {
-        this.github( to );
-    }
-
     this.updateStatus( to, message );
 });
 
 bot.addListener( "silence", function( channel ) {
-    util.probably( .50, this.shuttle, this, arguments );
+    util.probably( .50,
+        this.shuttle,
+        this, arguments
+    ).or( .50,
+        this.github,
+        this, arguments
+    );
 });
 
 bot.answer = function( from, to, message ) {
