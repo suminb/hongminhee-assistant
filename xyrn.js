@@ -80,6 +80,10 @@ bot.initStatus = function( channel ) {
                     reportStatus( "stillness", stat.stillness );
                 }
             }
+
+            util.probably( .05, function() {
+                bot.emit( "period", channel );
+            });
         };
     }).call( this, channel );
     setInterval( fn, 3000 );
@@ -172,6 +176,12 @@ bot.addListener( "silence", function( channel ) {
     );
 });
 
+bot.addListener( "period", function( channel ) {
+    this.hungry( channel );
+    this.suggestDinnerMenu( channel );
+    this.distract( channel );
+});
+
 bot.answer = function( from, to, message ) {
     /**:bot.answer( from, to, message )
 
@@ -233,7 +243,7 @@ bot.giggle = function( from, to, message ) {
     this.talk( to, message );
 };
 
-bot.shuttle = humane.coolTime(function( channel ) {
+bot.shuttle = humane.activeTime( humane.coolTime(function( channel ) {
     /**:bot.shuttle( channel )
 
     4camel 개드립 셔틀
@@ -264,10 +274,12 @@ bot.shuttle = humane.coolTime(function( channel ) {
             });
         }
     });
-}, function() { return util.rand( 20000, 3600000 ); });
+}, function() { return util.rand( 20000, 3600000 ); }), [
+    { hours: "9-12,13-18", day: "1-5" } // 평일 점심시간 제외한 근무시간
+]);
 bot.shuttle.history = [];
 
-bot.github = humane.coolTime(function( channel ) {
+bot.github = humane.activeTime( humane.coolTime(function( channel ) {
     var projects = [ "lessipy" ],
         project = util.choice( projects ),
         nick = project + "-github",
@@ -314,22 +326,63 @@ bot.github = humane.coolTime(function( channel ) {
         this.part( channel );
         this.disconnect();
     });
-}, function() { return util.rand( 3600000, 21600000 ); });
+}, function() { return util.rand( 3600000, 21600000 ); }), [
+    { hours: "0-2,17-23", day: "0,1,2,5" }, // 야간개발과 그 다음날 제외한 밤
+    { hours: "10-17", day: 3 }, // 야간개발 날
+    { hours: "1-2", day: 4 } // 야간개발 다음날
+]);
 
-bot.suggestDinnerMenu = function( channel ) {
+bot.hungry = humane.activeTime( humane.coolTime(function( channel ) {
+    /**:bot.hungry( channel )
+
+    배고파한다
+    */
+    var messages = [[
+        "흑흑", "아...", "음", "아이고"
+    ],[
+        "배고프다", "배고프네", "머뭑지", "점심 먹뭐지", "점심 머뭑지"
+    ]];
+    util.probably( .50, function() {
+        this.talk( to, messages, 3000 );
+    }, this );
+}, 43200000 ), [
+    { hours: "10-11", day: "1-5" } // 평일 점심시간 직전
+]);
+
+bot.suggestDinnerMenu = humane.activeTime( humane.coolTime(function( channel ) {
     /**:bot.suggestDinnerMenu( channel )
 
     저녁메뉴 제안
     */
     var messages = [[
-        "홍민희: 오늘 머뭑지?", "홍민희: 이따 뭐 먹을거?"
+        "홍민희: 오늘 머뭑지?", "홍민희: 이따 뭐 먹을거?", "홍민희: 머뭑음?"
     ],[
         "피자 먹자 피자", "홍민희: 도시락 or 치킨 or 『피자』",
         "피자 시키자", "피자나 시킬까", "피ㅣ자나 시킬까",
         "너 피자 아직도 있더라"
     ]];
     this.talk( to, messages );
-};
+}, 43200000 ), [
+    { hours: 17, day: 3 } // 야간개발 날 퇴근 직전
+]);
+
+bot.distract = humane.activeTime( humane.coolTime(function( channel ) {
+    /**:bot.distract( channel )
+
+    집중력이 떨어진다
+    */
+    var messages = [[
+        "왤케 집중력 병신이지", "오늘도 왜 이렇게 일이 안되지",
+        "아 왜이렇게 일이 하기가 싫지",
+        "그래 이렇게 일이나 하고 있으면 내게도 여친이 생기겠지...",
+        "어째 난 분명히 일하고 있었는데 일이 더 생겼군"
+    ]];
+    util.probably( .50, function() {
+        this.talk( to, messages, 3000 );
+    }, this );
+}, function() { return util.rand( 86400000, 604800000 ); }), [
+    { hours: 16, day: "1-5" } // 평일 16시
+]);
 
 return bot;
 };
