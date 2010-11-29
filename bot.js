@@ -15,5 +15,7 @@ fs.readFile( configPath, function( err, data ) {
         throw err;
     }
     var config = JSON.parse( data );
+    config.userName = config.userName || config.nick;
+    config.realName = config.realName || config.nick;
     xyrn( new irc.Client( null, null, config ) );
 });

@@ -36,7 +36,9 @@ bot.initStatus = function( channel ) {
         funniness: 0, // 화기애애한 정도
         prosperity: 0 // 흥한 정도
     };
-    this.times[ channel ] = {};
+    this.times[ channel ] = {
+        silenced: new Date()
+    };
 
     var fn = (function( channel ) {
         var stat = this.status[ channel ],
@@ -183,7 +185,7 @@ bot.answer = function( from, to, message ) {
         answers = [ "네", "네?", "음?" ];
     }
     if ( Math.random() < .75 ) {
-        this.talk( to, [ answers ]);
+        this.talk( to, [ answers ], util.gaussianRand( 1000, 500 ) );
     } else {
         for ( var i = 0; i < answers.length; i++ ) {
             answers[ i ] = from + ": " + answers[ i ];
