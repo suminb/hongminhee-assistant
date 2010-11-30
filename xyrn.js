@@ -86,8 +86,9 @@ bot.initStatus = function( channel ) {
             });
         };
     }).call( this, channel );
-    setInterval( fn, 3000 );
+    this.intervals[ channel ] = setInterval( fn, 3000 );
 };
+bot.intervals = {};
 
 bot.updateStatus = function( channel, message ) {
     var stat = this.status[ channel ],
@@ -111,6 +112,8 @@ bot.updateStatus = function( channel, message ) {
 };
 
 bot.addListener( "kick", function( channel, who, by, reason ) {
+    clearInterval( this.intervals[ channel ] );
+
     if ( who === this.nick ) {
         // 강퇴 당하면 다시 돌아옴
         setTimeout(function() {
@@ -132,12 +135,12 @@ bot.addListener( "join", function( channel, who ) {
     }
 });
 
-bot.addListener( "message", function( from, to, message ) {
+bot.addListener( "message", humane.activeTime(function( from, to, message ) {
     var stat = this.status[ to ],
         match;
 
     if ( humane.talk.ing || /-github$/.exec( from ) ) {
-        // 아직 이전 대답을 하지 않았을 경우 멈춤
+        // 아직 이전 대답을 하지 않았을 경우 또는 github 봇이 말했을 땐 멈춤
         return;
     }
 
@@ -164,7 +167,9 @@ bot.addListener( "message", function( from, to, message ) {
     }
 
     this.updateStatus( to, message );
-});
+}, [
+    { hours: "9-12,13-18", day: "1-5" } // 평일 점심시간 제외한 근무시간
+]) );
 
 bot.addListener( "silence", function( channel ) {
     util.probably( .50,
