@@ -67,8 +67,8 @@ bot.initStatus = function( channel ) {
                     stat.prosperity = half( stat.prosperity );
                     if ( !stat.prosperity ) {
                         time.silenced = now;
+                        reportStatus( "silenced" );
                     }
-                    reportStatus( "silenced" );
                 }
             } else if ( time.silenced ) {
                 prev = util.round( stat.stillness, 2 );
@@ -81,7 +81,7 @@ bot.initStatus = function( channel ) {
                 }
             }
 
-            util.probably( .05, function() {
+            util.probably( .25, function() {
                 bot.emit( "period", channel );
             });
         };
@@ -135,6 +135,9 @@ bot.addListener( "join", function( channel, who ) {
     }
 });
 
+bot.addListener( "message", function( from, to, message ) {
+    this.updateStatus( to, message );
+});
 bot.addListener( "message", humane.activeTime(function( from, to, message ) {
     var stat = this.status[ to ],
         match;
@@ -146,11 +149,11 @@ bot.addListener( "message", humane.activeTime(function( from, to, message ) {
 
     if ( /xy(m|rn)|씸|성(용|룡)/.exec( message ) ) {
         var random = Math.random();
-        if ( random < .50 ) {
+        if ( random < .75 ) {
             // 50% 확률로 대답함
             this.answer.apply( this, arguments );
         } else if ( random < .75 ) {
-            // 25% 확률로 무언가 발사함
+            // 19% 확률로 무언가 발사함
             this.shoot.apply( this, arguments );
         }
     }
@@ -165,8 +168,6 @@ bot.addListener( "message", humane.activeTime(function( from, to, message ) {
             }, this );
         }, this, arguments );
     }
-
-    this.updateStatus( to, message );
 }, [
     { hours: "9-12,13-18", day: "1-5" } // 평일 점심시간 제외한 근무시간
 ]) );
@@ -194,10 +195,24 @@ bot.answer = function( from, to, message ) {
     */
     var talkDown = /^(subl|홍민희|kijun|치도리)/,
         answers;
-    if ( talkDown.exec( from ) ) {
-        answers = [ "dd", "ㅇㅇ", "ㅇㅇ?", "?", "응", "응?" ];
+    if ( /\?$/.exec( message ) ) {
+        if ( talkDown.exec( from ) ) {
+            answers = [ "맞음", "그럴걸", "ㅇㅇ 아마도", "잘 모르겠음" ];
+        } else {
+            answers = [ "네 맞아요", "그럴걸요?", "아마도요", "흠 글쎄요" ];
+        }
+    } else if ( /줘$/.exec( message ) ) {
+        if ( talkDown.exec( from ) ) {
+            answers = [ "알겠음", "ㅇㅋ", "ㅋㅋㅋㅇㅋ", "ㅇㅇ", "ok", "응" ];
+        } else {
+            answers = [ "그럴게요", "알겠어요", "네" ];
+        }
     } else {
-        answers = [ "네", "네?", "음?" ];
+        if ( talkDown.exec( from ) ) {
+            answers = [ "dd", "ㅇㅇ", "ㅇㅇ?", "?", "응", "응?", "왜" ];
+        } else {
+            answers = [ "네", "네?", "음?" ];
+        }
     }
     if ( Math.random() < .75 ) {
         this.talk( to, [ answers ], util.gaussianRand( 1000, 500 ) );
@@ -347,8 +362,8 @@ bot.hungry = humane.activeTime( humane.coolTime(function( channel ) {
     ],[
         "배고프다", "배고프네", "머뭑지", "점심 먹뭐지", "점심 머뭑지"
     ]];
-    util.probably( .50, function() {
-        this.talk( to, messages, 3000 );
+    util.probably( .75, function() {
+        this.talk( channel, messages, 3000 );
     }, this );
 }, 43200000 ), [
     { hours: "10-11", day: "1-5" } // 평일 점심시간 직전
@@ -366,7 +381,7 @@ bot.suggestDinnerMenu = humane.activeTime( humane.coolTime(function( channel ) {
         "피자 시키자", "피자나 시킬까", "피ㅣ자나 시킬까",
         "너 피자 아직도 있더라"
     ]];
-    this.talk( to, messages );
+    this.talk( channel, messages );
 }, 43200000 ), [
     { hours: 17, day: 3 } // 야간개발 날 퇴근 직전
 ]);
@@ -382,8 +397,8 @@ bot.distract = humane.activeTime( humane.coolTime(function( channel ) {
         "그래 이렇게 일이나 하고 있으면 내게도 여친이 생기겠지...",
         "어째 난 분명히 일하고 있었는데 일이 더 생겼군"
     ]];
-    util.probably( .50, function() {
-        this.talk( to, messages, 3000 );
+    util.probably( .75, function() {
+        this.talk( channel, messages, 3000 );
     }, this );
 }, function() { return util.rand( 86400000, 604800000 ); }), [
     { hours: 16, day: "1-5" } // 평일 16시
