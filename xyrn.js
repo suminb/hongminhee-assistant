@@ -148,17 +148,20 @@ bot.addListener( "message", humane.activeTime(function( from, to, message ) {
     }
 
     if ( /xy(m|rn)|씸|성(용|룡)/.exec( message ) ) {
-        var random = Math.random();
-        if ( random < .75 ) {
-            // 50% 확률로 대답함
-            this.answer.apply( this, arguments );
-        } else if ( random < .75 ) {
-            // 19% 확률로 무언가 발사함
-            this.shoot.apply( this, arguments );
+        util.probably( .75,
+            this.answer, this, arguments
+        ).or( .75,
+            this.shoot, this, arguments
+        );
+    } else if ( stat.answered ) {
+        if ( stat.answered[ 0 ] === from ) {
+            util.probably( .25, this.answer, this, arguments );
+        } else {
+            delete stat.answered;
         }
     }
 
-    if ( stat.funniness > 5 ) {
+    if ( /ㅋㅋㅋ+/.exec( message ) && stat.funniness > 5 ) {
         util.probably( stat.prosperity / 5, function() {
             this.giggle.apply( this, arguments );
 
@@ -173,10 +176,10 @@ bot.addListener( "message", humane.activeTime(function( from, to, message ) {
 ]) );
 
 bot.addListener( "silence", function( channel ) {
-    util.probably( .50,
+    util.probably( .10,
         this.shuttle,
         this, arguments
-    ).or( .50,
+    ).or( .30,
         this.github,
         this, arguments
     );
@@ -194,27 +197,50 @@ bot.answer = function( from, to, message ) {
     상대에 따라 반말 또는 존댓말로 대답
     */
     var talkDown = /^(subl|홍민희|kijun|치도리)/,
+        mySelf = /(xym|씸|sorimir)/,
         answers;
     if ( /\?$/.exec( message ) ) {
         if ( talkDown.exec( from ) ) {
             answers = [ "맞음", "그럴걸", "ㅇㅇ 아마도", "잘 모르겠음" ];
+        } else if ( mySelf.exec( from ) ) {
+            answers = [
+                "봇이 나한테 질문을 다하넼ㅋㅋ", "아 진짜같닼ㅋㅋ",
+                "이흥섭...이자식...대체 뭘 만들어낸거지", "ㅇㅇ",
+                "넌 닥쳨ㅋㅋㅋㅋㅋㅋ", "ㅋㅋㅋㅋㅋㅋ묻지맠ㅋㅋㅋ"
+            ];
         } else {
             answers = [ "네 맞아요", "그럴걸요?", "아마도요", "흠 글쎄요" ];
         }
     } else if ( /줘$/.exec( message ) ) {
         if ( talkDown.exec( from ) ) {
             answers = [ "알겠음", "ㅇㅋ", "ㅋㅋㅋㅇㅋ", "ㅇㅇ", "ok", "응" ];
+        } else if ( mySelf.exec( from ) ) {
+            answers = [
+                "시키지맠ㅋㅋㅋㅋㅋㅋㅋㅋㅋ", "닥쳐 미친놈앜ㅋㅋㅋㅋㅋㅋ",
+                "아니 넌 닥치라고wwwww", "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ",
+                "아오wwwwwwwwwwwww"
+            ];
         } else {
             answers = [ "그럴게요", "알겠어요", "네" ];
         }
     } else {
         if ( talkDown.exec( from ) ) {
             answers = [ "dd", "ㅇㅇ", "ㅇㅇ?", "?", "응", "응?", "왜" ];
+        } else if ( mySelf.exec( from ) ) {
+            answers = [
+                "봇이 막 부르넼ㅋㅋㅋㅋ", "뭐야 ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ",
+                "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ 뭐임ㅋㅋㅋㅋㅋ"
+            ];
         } else {
-            answers = [ "네", "네?", "음?" ];
+            answers = [ "네", "네?", "음?", "sp?" ];
         }
     }
-    if ( Math.random() < .75 ) {
+    if ( this.status[ to ].answered ) {
+        this.talk( to, [[
+            "아", ";;", "ㅡㅡ", "흠", "음", "ㅋㅋ", "ㅋㅋㅋ", "?", "-_-", "헐"
+        ]], util.gaussianRand( 1000, 500 ) );
+        delete stat.answered;
+    } else if ( Math.random() < .75 ) {
         this.talk( to, [ answers ], util.gaussianRand( 1000, 500 ) );
     } else {
         for ( var i = 0; i < answers.length; i++ ) {
@@ -222,6 +248,8 @@ bot.answer = function( from, to, message ) {
         }
         this.talk( to, [ answers ], util.gaussianRand( 10000, 5000 ) );
     }
+
+    this.status[ to ].answered = [ from, new Date() ];
 };
 
 bot.shoot = function( from, to, message ) {
@@ -383,7 +411,7 @@ bot.suggestDinnerMenu = humane.activeTime( humane.coolTime(function( channel ) {
     ]];
     this.talk( channel, messages );
 }, 43200000 ), [
-    { hours: 17, day: 3 } // 야간개발 날 퇴근 직전
+    { hours: 17, day: 4 } // 야간개발 날 퇴근 직전
 ]);
 
 bot.distract = humane.activeTime( humane.coolTime(function( channel ) {
