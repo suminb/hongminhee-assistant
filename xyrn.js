@@ -147,7 +147,7 @@ bot.addListener( "message", humane.activeTime(function( from, to, message ) {
         return;
     }
 
-    if ( /xy(m|rn)|씸|성(용|룡)/.exec( message ) ) {
+    if ( /xy(m|rn)?|씸|성(용|룡)/.exec( message ) ) {
         util.probably( .75,
             this.answer, this, arguments
         ).or( .75,
@@ -197,7 +197,7 @@ bot.answer = function( from, to, message ) {
     상대에 따라 반말 또는 존댓말로 대답
     */
     var talkDown = /^(subl|홍민희|kijun|치도리)/,
-        mySelf = /(xym|씸|sorimir)/,
+        mySelf = /(xym?|씸|sorimir)/,
         answers;
     if ( /\?$/.exec( message ) ) {
         if ( talkDown.exec( from ) ) {
@@ -296,6 +296,7 @@ bot.shuttle = humane.activeTime( humane.coolTime(function( channel ) {
 
     4camel 개드립 셔틀
     */
+    return; // 4camel이 망했다
     var homepage = "http://4camel.net",
         url = homepage + "/xe/?mid=dogdrip";
 
