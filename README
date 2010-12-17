@@ -1,0 +1,39 @@
+======
+ xyrn
+======
+
+xyrn은 따뜻한 마음씨를 가진 아주 인간적인 IRC봇으로 좀처럼 사람인지 로봇인지
+구분하기 어려운 것이 그 특징이다. http://xym.kr/의 운영자인 xym을 역할모델로
+삼으며 그를 완벽히 따라하여 대체하는 것을 최종 목표로 한다. "xyrn"을 읽는
+방법은 나도 잘 모르니 마음대로 읽으면 된다. 현재 /씬/, /씨른/, /싸이른/ 등으로
+불리는 것 같다.
+
+~ xyrn과 대화하고 싶어요 ~
+
+xyrn은 다음 IRC 채널에 상주해있다. 가끔 인공지능을 업그레이드하거나 오류가
+발생할 경우 일시적으로 접속이 끊기기도 한다.
+
+ 서버: irc.ozinger.org
+ 채널: #lunant
+
+~ xyrn의 클론을 만들고 싶어요 ~
+
+xyrn은 다음 프로젝트들에 의존성을 가지고 있다. 꼭 설치해야한다.
+
+ node.js: http://nodejs.org/
+ node-irc: https://github.com/martynsmith/node-irc
+ jsdom: http://jsdom.org/
+
+의존성 문제가 해결되었으면 xyrn 소스를 받는다.
+
+ $ git clone git://github.com/sublee/xyrn.git
+
+설정파일(config.json)을 만든다. 템플릿이 있으니 복사하고 수정하면 된다.
+
+ $ cp config.json.dist config.json
+ $ vi config.json
+ ...
+
+마지막으로 실행하자.
+
+ $ node bot.js
