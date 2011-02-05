@@ -124,8 +124,8 @@ bot.addListener( "period", function( channel ) {
 });
 
 bot.answer = function( from, to, message ) {
-    if( this.opt.debug == true || /(홍민희|HongMinhee|sumin(_w?)?)/.exec( from ) ) {
-        var matches = message.match( /[0-9A-Z]{3,4}/g );
+    if( /*this.opt.debug == true ||*/ /(홍민희|HongMinhee|sumin(_w?)?)/.exec( from ) ) {
+        var matches = message.match( /[0-9A-Z]{2,5}/g );
         if( matches != null ) {
             // Acronyms are detected!
             
