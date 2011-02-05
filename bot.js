@@ -7,7 +7,7 @@ try {
     console.error( "cannot found `irc` module. try `npm install irc`" );
     return;
 }
-var xyrn = require( "./xyrn" );
+var assistant = require( "./assistant" );
 
 var configPath = path.join( __dirname, "config.json" );
 fs.readFile( configPath, function( err, data ) {
@@ -17,5 +17,5 @@ fs.readFile( configPath, function( err, data ) {
     var config = JSON.parse( data );
     config.userName = config.userName || config.nick;
     config.realName = config.realName || config.nick;
-    xyrn( new irc.Client( null, null, config ) );
+    assistant( new irc.Client( null, null, config ) );
 });
